@@ -20,7 +20,7 @@ const redisClient = redis.createClient(
     "redis-17416.c301.ap-south-1-1.ec2.cloud.redislabs.com", //ip address
     { no_ready_check: true }
 );
-redisClient.auth("ocV23EoARL37Be3XZGjj6qL7FzFCDkhk", function (err) {//password
+redisClient.auth("ocV23EoARL37Be3XZGjj6qL7FzFCDkhk", function (err) {//password -- Authentication
     if (err) throw err;
 });
 
@@ -57,9 +57,9 @@ const createShortUrl = async function (req, res) {
                 .send({ status: false, message: "invalid long url" })
         }
 
-        let cacheUrlData = await GET_ASYNC(data.longUrl);// catch call
-        if (cacheUrlData && cacheUrlData != 'null') {
-            let object = JSON.parse(cacheUrlData)// converts string to obj
+        let cacheUrlData = await GET_ASYNC(data.longUrl);  // catch call
+        if (cacheUrlData) {
+            let object = JSON.parse(cacheUrlData)   // converts string to obj
 
             return res.status(200).send({ status: true, message: "already exist", data: object })
 
@@ -70,13 +70,16 @@ const createShortUrl = async function (req, res) {
                 return res.status(200).send({ status: true, message: "already exist", data: urlData })
             }
         }
-
-        let baseUrl = "http://localhost:3000/"
+        
+        let port = req.get('host')
+        console.log(port)
+        let baseUrl = `http://${port}/`
+        // let baseUrl = "http://localhost:3000/"
         data.urlCode = shortId.generate().toLocaleLowerCase()
         data.shortUrl = baseUrl + data.urlCode
 
         await urlModel.create(data)
-        let urlData = await urlModel.findOne({ longUrl: data.longUrl }).select({ _id:0,longUrl: 1, shortUrl: 1, urlCode: 1 })
+        let urlData = await urlModel.findOne({ longUrl: data.longUrl }).select({ _id: 0, longUrl: 1, shortUrl: 1, urlCode: 1 })
         return res.status(201).send({ status: true, data: urlData })
     }
     catch (err) { res.status(500).send(err.message) }
@@ -95,7 +98,7 @@ const fetchUrl = async function (req, res) {
 
         let cacheUrlData = await GET_ASYNC(urlCode);// catch call
 
-        if (cacheUrlData ) {
+        if (cacheUrlData) {
             let object = JSON.parse(cacheUrlData)// converts string to obj
 
             return res.status(302).redirect(object.longUrl);
